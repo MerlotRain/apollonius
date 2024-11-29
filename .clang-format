@@ -1,0 +1,30 @@
+# .clang-format: GNU style for C and C++ mixed coding
+
+# Indentation
+BasedOnStyle: GNU
+IndentWidth: 2  # Use 2 spaces for indentation
+TabWidth: 2     # Set tab width to 2 spaces
+UseTab: Never    # Do not use tabs, use spaces instead
+
+# Braces
+BreakBeforeBraces: Allman  # Braces go on a new line (Allman style)
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: true
+  BeforeElse: true
+
+# Pointer & Reference
+PointerAlignment: Left    # `int* ptr;` not `int *ptr;`
+ReferenceAlignment: Left  # `int& ref;` not `int &ref;`
+
+# Space and Alignment
+SpaceBeforeParens: ControlStatements  # No space before parentheses in control statements (e.g., `if(x)` not `if (x)`)
+SpaceAfterCStyleCast: true  # Add space after C-style cast (e.g., `(int) x` -> `( int ) x`)
+AlignConsecutiveAssignments: true  # Align consecutive assignments
+
+# Function Declarations
+AlignAfterOpenBracket: true  # Align function parameters after the opening bracket
+AllowAllParametersOfDeclarationOnNextLine: true  # Allow function parameters to be on the next line if too long
+
+# Comments
+CommentPragmas: '^.*$'  # No special treatment for comments
