@@ -16,15 +16,6 @@ This library provides a C/C++ API to solve the Apollonius Circle Problem, which 
       - [Retrieving the Solution](#retrieving-the-solution)
       - [Cleaning Up](#cleaning-up)
   - [API Reference](#api-reference)
-        - [apo_t* apo_init()](#apo_t-apo_init)
-        - [void apo_destroy(apo_t* apo)](#void-apo_destroyapo_t-apo)
-        - [int apo_add_point(apo_t* apo, double x, double y)](#int-apo_add_pointapo_t-apo-double-x-double-y)
-        - [int apo_add_line(apo_t* apo, double x1, double y1, double x2, double y2)](#int-apo_add_lineapo_t-apo-double-x1-double-y1-double-x2-double-y2)
-        - [int apo_add_circle(apo_t* apo, double cx, double cy, double r)](#int-apo_add_circleapo_t-apo-double-cx-double-cy-double-r)
-        - [int apo_solve(apo_t* apo, apo_solution_t** solution)](#int-apo_solveapo_t-apo-apo_solution_t-solution)
-        - [void apo_solution_destroy(apo_solution_t* solution)](#void-apo_solution_destroyapo_solution_t-solution)
-        - [unsigned int apo_solution_get_count(const apo_solution_t* solution)](#unsigned-int-apo_solution_get_countconst-apo_solution_t-solution)
-        - [void apo_solution_get_circle(const apo_solution_t* solution, unsigned int idx, double* cx, double* cy, double* radius)](#void-apo_solution_get_circleconst-apo_solution_t-solution-unsigned-int-idx-double-cx-double-cy-double-radius)
   - [License](#license)
 
 ## Installation
@@ -118,19 +109,19 @@ apo_solution_destroy(solution);  // Destroy the solution object
 
 ## API Reference
 
-##### apo_t* apo_init()
+#### apo_t* apo_init()
 
 Initializes a new Apollonius problem instance.
    
    * Returns: Pointer to a new apo_t object or NULL if allocation fails.
 
-##### void apo_destroy(apo_t* apo)
+#### void apo_destroy(apo_t* apo)
 
 Destroys an Apollonius problem object and frees associated resources.
 
    * Parameters: apo — Pointer to the Apollonius problem object to destroy.
 
-##### int apo_add_point(apo_t* apo, double x, double y)
+#### int apo_add_point(apo_t* apo, double x, double y)
 
 Adds a point to the Apollonius problem.
 
@@ -144,7 +135,7 @@ Adds a point to the Apollonius problem.
 
      * Returns: 1 if the point was added successfully, 0 otherwise.
 
-##### int apo_add_line(apo_t* apo, double x1, double y1, double x2, double y2)
+#### int apo_add_line(apo_t* apo, double x1, double y1, double x2, double y2)
 
 Adds a line to the Apollonius problem.
 
@@ -158,7 +149,7 @@ Adds a line to the Apollonius problem.
 
      * Returns: 1 if the line was added successfully, 0 otherwise.
 
-##### int apo_add_circle(apo_t* apo, double cx, double cy, double r)
+#### int apo_add_circle(apo_t* apo, double cx, double cy, double r)
 
 Adds a circle to the Apollonius problem.
 
@@ -172,7 +163,7 @@ Adds a circle to the Apollonius problem.
 
      * Returns: 1 if the circle was added successfully, 0 otherwise.
 
-##### int apo_solve(apo_t* apo, apo_solution_t** solution)
+#### int apo_solve(apo_t* apo, apo_solution_t** solution)
 
 Solves the Apollonius problem and computes the resulting circles.
 
@@ -184,13 +175,13 @@ Solves the Apollonius problem and computes the resulting circles.
 
      * Returns: 1 if the solution was computed successfully, 0 otherwise.
 
-##### void apo_solution_destroy(apo_solution_t* solution)
+#### void apo_solution_destroy(apo_solution_t* solution)
 
 Destroys an Apollonius solution object and frees associated resources.
 
    * Parameters: solution — Pointer to the solution object to destroy.
 
-##### unsigned int apo_solution_get_count(const apo_solution_t* solution)
+#### unsigned int apo_solution_get_count(const apo_solution_t* solution)
 
 Gets the number of circles in the solution.
 
@@ -198,7 +189,7 @@ Gets the number of circles in the solution.
 
      * Returns: Number of circles in the solution.
 
-##### void apo_solution_get_circle(const apo_solution_t* solution, unsigned int idx, double* cx, double* cy, double* radius)
+#### void apo_solution_get_circle(const apo_solution_t* solution, unsigned int idx, double* cx, double* cy, double* radius)
 
 Retrieves the details of a circle in the solution.
 
