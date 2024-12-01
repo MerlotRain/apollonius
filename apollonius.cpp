@@ -32,6 +32,7 @@
 
 #define APO_TOLERANCE (1.0e-9)
 
+#define APO_UNKOWN_TYPE (-1)
 #define APO_POINT_TYPE (0)
 #define APO_LINE_TYPE (1)
 #define APO_CIRCLE_TYPE (2)
@@ -39,15 +40,29 @@
 #define APO_IS_POINT(obj) ((obj).type == APO_POINT_TYPE)
 #define APO_IS_LINE(obj) ((obj).type == APO_LINE_TYPE)
 #define APO_IS_CIRCLE(obj) ((obj).type == APO_CIRCLE_TYPE)
+#define APO_IS_NULL(obj) ((obj).type == APO_UNKOWN_TYPE)
+
+#define NumberIsNormal(x) (!std::isnan(x) && !std::isinf(x))
+
+#define APO_EMPTY_RES std::vector<APO_Circle>()
+
+enum Side
+{
+  Left,
+  Right,
+  BothSides,
+};
 
 struct APO_Point
 {
   double x;
   double y;
+  bool valid;
 
   APO_Point();
-  APO_Point(double x, double y);
+  APO_Point(double x, double y, bool valid_in = true);
   void setPolar(double radius, double angle);
+  bool isValid() const;
 
   APO_Point operator+(const APO_Point& rhs) const;
   APO_Point operator-(const APO_Point& rhs) const;
@@ -67,13 +82,11 @@ struct APO_Point
   void setMagnitude(double m);
 
   static APO_Point getAverage(const APO_Point& v1, const APO_Point& v2);
-  static APO_Point getAverage(const std::vector<APO_Point>& vectors);
-
   static double getCrossProduct(const APO_Point& v1, const APO_Point& v2);
   static double getDotProduct(const APO_Point& v1, const APO_Point& v2);
   static APO_Point createPolar(double radius, double angle);
   static std::vector<APO_Point>
-  getUnique(const std::vector<APO_Point>& vectors, double tol = APO_TOLERANCE);
+  getUnique(const std::vector<APO_Point>& vectors);
 };
 
 struct APO_Line
@@ -96,6 +109,8 @@ struct APO_Line
   double getDistanceTo(const APO_Point& point, bool limited = true) const;
   void reverse();
   bool moveTo(const APO_Point& dest);
+  std::vector<APO_Line> getOffset(double distance, double num,
+                                  Side side) const;
 };
 
 struct APO_Circle
@@ -148,37 +163,44 @@ getCircleTangentsThroughPoint(const APO_Circle& circle, const APO_Point& p);
 static std::vector<APO_Line> getAllTangents(const APO_Object& obj1,
                                             const APO_Object& obj2);
 
-static std::vector<APO_Circle> getSolutionFromPPP(const APO_Object& point1,
-                                                  const APO_Object& point2,
-                                                  const APO_Object& point3);
+static std::vector<APO_Circle>
+getSolutions(const std::vector<APO_Object>& objs);
 
-static std::vector<APO_Circle> getSolutionFromPPC(const APO_Object& point1,
-                                                  const APO_Object& point2,
-                                                  const APO_Object& circle);
+static std::vector<APO_Circle> getSolution(const APO_Object& obj1,
+                                           const APO_Object& obj2,
+                                           const APO_Object& obj3);
 
-static std::vector<APO_Circle> getSolutionFromPPL(const APO_Object& point1,
-                                                  const APO_Object& point2,
-                                                  const APO_Object& line);
+static std::vector<APO_Circle> getSolutionFromPPP(const APO_Point& point1,
+                                                  const APO_Point& point2,
+                                                  const APO_Point& point3);
 
-static std::vector<APO_Circle> getSolutionFromPCC(const APO_Object& point,
-                                                  const APO_Object& circle1,
-                                                  const APO_Object& circle2);
+static std::vector<APO_Circle> getSolutionFromPPC(const APO_Point& point1,
+                                                  const APO_Point& point2,
+                                                  const APO_Circle& circle);
 
-static std::vector<APO_Circle> getSolutionFromPLL(const APO_Object& point,
-                                                  const APO_Object& line1,
-                                                  const APO_Object& line2);
+static std::vector<APO_Circle> getSolutionFromPPL(const APO_Point& point1,
+                                                  const APO_Point& point2,
+                                                  const APO_Line& line);
 
-static std::vector<APO_Circle> getSolutionFromPLC(const APO_Object& point,
-                                                  const APO_Object& line,
-                                                  const APO_Object& circle);
+static std::vector<APO_Circle> getSolutionFromPCC(const APO_Point& point,
+                                                  const APO_Circle& circle1,
+                                                  const APO_Circle& circle2);
 
-static std::vector<APO_Circle> getSolutionFromLLL(const APO_Object& line1,
-                                                  const APO_Object& line2,
-                                                  const APO_Object& line3);
+static std::vector<APO_Circle> getSolutionFromPLL(const APO_Point& point,
+                                                  const APO_Line& line1,
+                                                  const APO_Line& line2);
 
-static std::vector<APO_Circle> getSolutionFromLLC(const APO_Object& line1,
-                                                  const APO_Object& line2,
-                                                  const APO_Object& circle);
+static std::vector<APO_Circle> getSolutionFromPLC(const APO_Point& point,
+                                                  const APO_Line& line,
+                                                  const APO_Circle& circle);
+
+static std::vector<APO_Circle> getSolutionFromLLL(const APO_Line& line1,
+                                                  const APO_Line& line2,
+                                                  const APO_Line& line3);
+
+static std::vector<APO_Circle> getSolutionFromLLC(const APO_Line& line1,
+                                                  const APO_Line& line2,
+                                                  const APO_Circle& circle);
 
 static std::vector<APO_Circle> getSolutionFromLCC(const APO_Object& line,
                                                   const APO_Object& circle2,
@@ -195,6 +217,8 @@ static bool getIntersectionCC(const APO_Circle& circle1,
                               std::vector<APO_Point>& points);
 static bool getIntersectionLL(const APO_Line& line1, const APO_Line& line2,
                               bool limited, APO_Point& points);
+static bool getIntersectsWithLL(const APO_Line& line1, const APO_Line& line2,
+                                bool limited);
 
 static bool pointIsOnLine(const APO_Point& point, const APO_Line& line,
                           bool limited);
@@ -765,66 +789,152 @@ getAllTangents(const APO_Object& obj1, const APO_Object& obj2)
     a2 = a1 + M_PI;
     tangents.push_back(APO_Line(line.end_point, a2, c1Radius));
   }
-
   return tangents; // 1-2 solutions
 }
 
 std::vector<APO_Circle>
-getSolutionFromPPP(const APO_Object& point1, const APO_Object& point2,
-                   const APO_Object& point3)
+getSolutions(const std::vector<APO_Object>& objs)
 {
-  if (!APO_IS_POINT(point1) || !APO_IS_POINT(point2) || !APO_IS_POINT(point3))
-  {
-    return std::vector<APO_Circle>();
-  }
+  assert(objs.size() == 3);
 
-  return { APO_Circle::createFrom3Points(point1.point, point2.point,
-                                         point3.point) };
+  return getSolution(objs[0], objs[1], objs[2]);
 }
 
 std::vector<APO_Circle>
-getSolutionFromPPC(const APO_Object& point1, const APO_Object& point2,
-                   const APO_Object& circle)
+getSolution(const APO_Object& obj1, const APO_Object& obj2,
+            const APO_Object& obj3)
+{
+
+  std::vector<APO_Object> pointObjs;
+  std::vector<APO_Object> lineObjs;
+  std::vector<APO_Object> circleObjs;
+
+#define OBJECT_CLASSIFICATION(obj)                                            \
+  switch (obj.type)                                                           \
+  {                                                                           \
+  case APO_POINT_TYPE:                                                        \
+    pointObjs.push_back(obj);                                                 \
+    break;                                                                    \
+  case APO_LINE_TYPE:                                                         \
+    lineObjs.push_back(obj);                                                  \
+    break;                                                                    \
+  case APO_CIRCLE_TYPE:                                                       \
+    circleObjs.push_back(obj);                                                \
+    break;                                                                    \
+  };
+
+  OBJECT_CLASSIFICATION(obj1);
+  OBJECT_CLASSIFICATION(obj2);
+  OBJECT_CLASSIFICATION(obj3);
+
+  if (pointObjs.size() == 3)
+  {
+
+    return getSolutionFromPPP(pointObjs[0].point, pointObjs[1].point,
+                              pointObjs[2].point);
+  }
+  else if (pointObjs.size() == 2)
+  {
+    if (circleObjs.size() == 1)
+    {
+      return getSolutionFromPPC(pointObjs[0].point, pointObjs[1].point,
+                                circleObjs[0].circle);
+    }
+    else if (lineObjs.size() == 1)
+    {
+      return getSolutionFromPPL(pointObjs[0].point, pointObjs[1].point,
+                                lineObjs[0].line);
+    }
+  }
+  else if (pointObjs.size() == 1)
+  {
+    if (circleObjs.size() == 2)
+    {
+      return getSolutionFromPCC(pointObjs[0].point, circleObjs[0].circle,
+                                circleObjs[1].circle);
+    }
+    else if (lineObjs.size() == 2)
+    {
+      return getSolutionFromPLL(pointObjs[0].point, lineObjs[0].line,
+                                lineObjs[1].line);
+    }
+    else if (circleObjs.size() == 1 && lineObjs.size() == 1)
+    {
+      return getSolutionFromPLC(pointObjs[0].point, lineObjs[0].line,
+                                circleObjs[0].circle);
+    }
+  }
+  else if (pointObjs.size() == 0)
+  {
+    if (lineObjs.size() == 3)
+    {
+      return getSolutionFromLLL(lineObjs[0].line, lineObjs[1].line,
+                                lineObjs[2].line);
+    }
+    else if (lineObjs.size() == 2 && circleObjs.size() == 1)
+    {
+      return getSolutionFromLLC(lineObjs[0].line, lineObjs[1].line,
+                                circleObjs[0].circle);
+    }
+    else if (lineObjs.size() == 1 && circleObjs.size() == 2)
+    {
+      return getSolutionFromLCC(lineObjs[0], circleObjs[0], circleObjs[1]);
+    }
+    else if (circleObjs.size() == 3)
+    {
+      return getSolutionFromCCC(circleObjs[0], circleObjs[1], circleObjs[2]);
+    }
+  }
+
+#undef OBJECT_CLASSIFICATION
+  return APO_EMPTY_RES;
+}
+
+std::vector<APO_Circle>
+getSolutionFromPPP(const APO_Point& point1, const APO_Point& point2,
+                   const APO_Point& point3)
+{
+  return { APO_Circle::createFrom3Points(point1, point2, point3) };
+}
+
+std::vector<APO_Circle>
+getSolutionFromPPC(const APO_Point& point1, const APO_Point& point2,
+                   const APO_Circle& circle)
 {
   auto ppc = [](const APO_Point& p1, const APO_Point& p2,
-                const APO_Object& circle) -> std::vector<APO_Circle>
+                const APO_Circle& circle) -> std::vector<APO_Circle>
   {
-    APO_Line l1(circle.circle.center, p1);
+    APO_Line l1(circle.center, p1);
     APO_Point m = APO_Point::getAverage(p1, p2);
     APO_Line l2(m, p2.getAngleTo(p1) + M_PI / 2.0, 1.0);
 
     APO_Point ip;
     if (getIntersectionLL(l1, l2, 0, ip))
     {
-      return std::vector<APO_Circle>();
+      return APO_EMPTY_RES;
     }
     return { APO_Circle(ip, ip.getDistanceTo(p1)) };
   };
 
   std::vector<APO_Circle> res;
 
-  if (!APO_IS_POINT(point1) || !APO_IS_POINT(point2) || !APO_IS_CIRCLE(circle))
+  if (0 == pointIsOnCircle(point1, circle)
+      && 0 == pointIsOnCircle(point2, circle))
   {
-    return res;
-  }
-
-  if (0 == pointIsOnCircle(point1.point, circle.circle)
-      && 0 == pointIsOnCircle(point2.point, circle.circle))
-  {
-    return { APO_Circle(circle.circle.center, circle.circle.radius) };
+    return { APO_Circle(circle.center, circle.radius) };
   }
 
   APO_Point pOnCircle, pOther;
-  if (0 == pointIsOnCircle(point1.point, circle.circle))
+  if (0 == pointIsOnCircle(point1, circle))
   {
-    pOnCircle = point1.point;
-    pOther    = point2.point;
+    pOnCircle = point1;
+    pOther    = point2;
     return ppc(pOnCircle, pOther, circle);
   }
-  if (0 == pointIsOnCircle(point2.point, circle.circle))
+  if (0 == pointIsOnCircle(point2, circle))
   {
-    pOnCircle = point2.point;
-    pOther    = point1.point;
+    pOnCircle = point2;
+    pOther    = point1;
     return ppc(pOnCircle, pOther, circle);
   }
 
@@ -853,14 +963,14 @@ getSolutionFromPPC(const APO_Object& point1, const APO_Object& point2,
 }
 
 std::vector<APO_Circle>
-getSolutionFromPPL(const APO_Object& point1, const APO_Object& point2,
-                   const APO_Object& line)
+getSolutionFromPPL(const APO_Point& point1, const APO_Point& point2,
+                   const APO_Line& line)
 {
-  auto ppl = [](const APO_Object& point1, const APO_Object& point2,
-                const APO_Object& line)
+  auto ppl = [](const APO_Point& point1, const APO_Point& point2,
+                const APO_Line& line)
   {
     std::vector<APO_Circle> res;
-    APO_Object inversion_cirlce(APO_Circle(point1.point, 10));
+    APO_Object inversion_cirlce(APO_Circle(point1, 10));
     APO_Object line_inverse;
     APO_Object point2_inverse;
     if (!getInverseShape(line, inversion_cirlce, line_inverse)
@@ -881,16 +991,13 @@ getSolutionFromPPL(const APO_Object& point1, const APO_Object& point2,
     return res;
   };
 
-  if (!APO_IS_POINT(point1) || !APO_IS_POINT(point2) || !APO_IS_LINE(line))
-    return std::vector<APO_Circle>();
-
   bool swapPoint = false;
-  if (pointIsOnLine(point1.point, line.line, true))
+  if (pointIsOnLine(point1, line, true))
   {
     swapPoint = true;
-    if (pointIsOnLine(point2.point, line.line, true))
+    if (pointIsOnLine(point2, line, true))
     {
-      return std::vector<APO_Circle>();
+      return APO_EMPTY_RES;
     }
   }
 
@@ -905,21 +1012,18 @@ getSolutionFromPPL(const APO_Object& point1, const APO_Object& point2,
 }
 
 std::vector<APO_Circle>
-getSolutionFromPCC(const APO_Object& point, const APO_Object& circle1,
-                   const APO_Object& circle2)
+getSolutionFromPCC(const APO_Point& point, const APO_Circle& circle1,
+                   const APO_Circle& circle2)
 {
   std::vector<APO_Circle> res;
-  if (!APO_IS_POINT(point) || !APO_IS_CIRCLE(circle1)
-      || !APO_IS_CIRCLE(circle2))
-    return res;
 
   // relative sized inversion circle:
-  double r_inv = circle1.circle.radius;
-  if (circle2.circle.radius > circle1.circle.radius)
+  double r_inv = circle1.radius;
+  if (circle2.radius > circle1.radius)
   {
-    r_inv = circle2.circle.radius;
+    r_inv = circle2.radius;
   }
-  APO_Object inversionCircle(APO_Circle(point.point, r_inv));
+  APO_Object inversionCircle(APO_Circle(point, r_inv));
 
   // construct inversion shape:
   APO_Object c1Inverse;
@@ -939,31 +1043,26 @@ getSolutionFromPCC(const APO_Object& point, const APO_Object& circle1,
 }
 
 std::vector<APO_Circle>
-getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
-                   const APO_Object& line2)
+getSolutionFromPLL(const APO_Point& point, const APO_Line& line1,
+                   const APO_Line& line2)
 {
   std::vector<APO_Circle> res;
-  if (!APO_IS_POINT(point) || !APO_IS_LINE(line1) || !APO_IS_LINE(line2))
-  {
-    return res;
-  }
 
   // intersection between two lines line1, line2:
   APO_Point ipLL;
-  bool resLL = getIntersectionLL(line1.line, line2.line, false, ipLL);
+  bool resLL = getIntersectionLL(line1, line2, false, ipLL);
   std::vector<APO_Circle> circles;
   std::vector<APO_Point> centers;
 
-  std::vector<APO_Line> bisectorLines
-      = getAngleBisectors(line1.line, line2.line);
+  std::vector<APO_Line> bisectorLines = getAngleBisectors(line1, line2);
 
-  bool onLine1 = pointIsOnLine(point.point, line1.line, false);
-  bool onLine2 = pointIsOnLine(point.point, line2.line, false);
+  bool onLine1 = pointIsOnLine(point, line1, false);
+  bool onLine2 = pointIsOnLine(point, line2, false);
 
   bool onBisector = false;
   for (size_t k = 0; k < bisectorLines.size(); k++)
   {
-    if (pointIsOnLine(point.point, bisectorLines[k], false))
+    if (pointIsOnLine(point, bisectorLines[k], false))
     {
       onBisector = true;
       break;
@@ -974,13 +1073,13 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
   if (!resLL)
   {
     // middle line:
-    APO_Point s         = line1.line.begin_point;
-    APO_Point p         = line2.line.getClosestPoint(s, false);
+    APO_Point s         = line1.begin_point;
+    APO_Point p         = line2.getClosestPoint(s, false);
     APO_Point center    = APO_Point::getAverage(s, p);
-    APO_Line middleLine = line1.line;
+    APO_Line middleLine = line1;
     middleLine.move(center - middleLine.begin_point);
     // circle with radius c-s around point:
-    APO_Circle circle = APO_Circle(point.point, center.getDistanceTo(s));
+    APO_Circle circle = APO_Circle(point, center.getDistanceTo(s));
     // intersections between circle and middle line are candidates:
     getIntersectionLC(middleLine, circle, false, centers);
   }
@@ -988,8 +1087,8 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
   // point is on line1 or line2:
   else if (onLine1 || onLine2)
   {
-    APO_Line line = onLine1 ? line1.line : line2.line;
-    APO_Line orthoLine(point.point, line.getAngle() + M_PI / 2, 1.0);
+    APO_Line line = onLine1 ? line1 : line2;
+    APO_Line orthoLine(point, line.getAngle() + M_PI / 2, 1.0);
     for (size_t k = 0; k < bisectorLines.size(); k++)
     {
       auto&& bisectorLine = bisectorLines[k];
@@ -1010,9 +1109,9 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
         return res;
       }
       // distance from point to line1 (radius of circle around point, tangential to lines):
-      double rp = line1.line.getDistanceTo(point.point, false);
+      double rp = line1.getDistanceTo(point, false);
       // distance from intersection line1/line2 to point:
-      double dp = ipLL.getDistanceTo(point.point);
+      double dp = ipLL.getDistanceTo(point);
       // distances from intersection line1/line2 to intersection of bisector line with circle around point, touching line1, line2:
       double dc1 = dp + rp;
       double dc2 = dp - rp;
@@ -1041,7 +1140,7 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
     // circle C tangential to two lines with center E, radius 10:
     else
     {
-      circles = getCircles2TR(line1.line, line2.line, 10.0);
+      circles = getCircles2TR(line1, line2, 10.0);
       if (circles.size() == 0)
       {
         return res;
@@ -1058,12 +1157,12 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
         if (!resLL)
         {
           // lines parallel:
-          line = line1.line;
-          line.move(point.point - line1.line.begin_point);
+          line = line1;
+          line.move(point - line1.begin_point);
         }
         else
         {
-          line = APO_Line(ipLL, point.point);
+          line = APO_Line(ipLL, point);
         }
 
         // intersections between line L and circle C -> G, H:
@@ -1080,8 +1179,8 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
         // two lines L1, L2 with same angle as EG, EH through point:
         APO_Line l1(e, g);
         APO_Line l2(e, h);
-        l1.move(point.point - l1.begin_point);
-        l2.move(point.point - l2.begin_point);
+        l1.move(point - l1.begin_point);
+        l2.move(point - l2.begin_point);
 
         // intersection of angle bisector and lines L1, L2 are centers of candidates:
         for (size_t k = 0; k < bisectorLines.size(); ++k)
@@ -1099,9 +1198,9 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
     for (size_t c = 0; c < centerCandidates.size(); ++c)
     {
       APO_Point centerCandidate = centerCandidates[c];
-      double dLine1 = line1.line.getDistanceTo(centerCandidate, false);
-      double dLine2 = line1.line.getDistanceTo(centerCandidate, false);
-      double dPoint = point.point.getDistanceTo(centerCandidate, false);
+      double dLine1             = line1.getDistanceTo(centerCandidate, false);
+      double dLine2             = line1.getDistanceTo(centerCandidate, false);
+      double dPoint             = point.getDistanceTo(centerCandidate, false);
       if (fuzzyCompare(dLine1, dPoint) && fuzzyCompare(dLine2, dPoint))
       {
         centers.push_back(centerCandidate);
@@ -1112,7 +1211,7 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
 
   for (size_t c = 0; c < centers.size(); ++c)
   {
-    double r = centers[c].getDistanceTo(point.point);
+    double r = centers[c].getDistanceTo(point);
     if (fuzzyCompare(r, 0.0))
     {
       continue;
@@ -1123,20 +1222,17 @@ getSolutionFromPLL(const APO_Object& point, const APO_Object& line1,
 }
 
 std::vector<APO_Circle>
-getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
-                   const APO_Object& circle)
+getSolutionFromPLC(const APO_Point& point, const APO_Line& line,
+                   const APO_Circle& circle)
 {
-  if (!APO_IS_POINT(point) || !APO_IS_LINE(line) || !APO_IS_CIRCLE(circle))
-    return std::vector<APO_Circle>();
-
-  APO_Point a = point.point;
-  APO_Point c = circle.circle.center;
-  APO_Point f = line.line.getClosestPoint(c, false);
+  APO_Point a = point;
+  APO_Point c = circle.center;
+  APO_Point f = line.getClosestPoint(c, false);
   APO_Line ortho(c, f);
 
   APO_Point cf = f - c;
   APO_Point ce = cf;
-  ce.setMagnitude(circle.circle.radius);
+  ce.setMagnitude(circle.radius);
   // intersections of orthogonal through c to line with circle:
   APO_Point d1              = c + ce;
   APO_Point e1              = c - ce;
@@ -1157,7 +1253,7 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
     {
       APO_Line da_(d, f);
       da_.rotate(M_PI / 4, d);
-      APO_Line par = line.line;
+      APO_Line par = line;
       par.moveTo(a);
 
       APO_Point a_;
@@ -1167,7 +1263,7 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
       }
 
       APO_Point f_;
-      if (!getIntersectionLL(da_, line.line, false, f_))
+      if (!getIntersectionLL(da_, line, false, f_))
       {
         continue;
       }
@@ -1185,9 +1281,9 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
       p = ips[0];
 
       APO_Point apm = APO_Point::getAverage(a, p);
-      double m      = line.line.getDistanceTo(apm, false);
+      double m      = line.getDistanceTo(apm, false);
       APO_Circle circ(a, m);
-      APO_Line par2 = line.line;
+      APO_Line par2 = line;
       par2.moveTo(apm);
 
       if (getIntersectionLC(par2, circ, false, ips))
@@ -1198,11 +1294,11 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
     }
     // special case:
     // point is on line:
-    else if (pointIsOnLine(a, line.line, false))
+    else if (pointIsOnLine(a, line, false))
     {
       // similarity axis:
       APO_Line ea(e, a);
-      getIntersectionLC(ea, circle.circle, false, ips);
+      getIntersectionLC(ea, circle, false, ips);
       if (ips.size() != 2)
       {
         continue;
@@ -1215,7 +1311,7 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
       APO_Line ci1(c, i1);
 
       // ortho through a:
-      APO_Line orthoA(a, line.line.getAngle() + M_PI / 2, 1.0);
+      APO_Line orthoA(a, line.getAngle() + M_PI / 2, 1.0);
 
       APO_Point p;
       if (!getIntersectionLL(orthoA, ci1, false, p))
@@ -1226,7 +1322,7 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
     {
       APO_Line da(d, a);
       APO_Point m;
-      if (!getIntersectionLL(da, line.line, false, m))
+      if (!getIntersectionLL(da, line, false, m))
         continue;
 
       APO_Circle efa = APO_Circle::createFrom3Points(e, f, a);
@@ -1252,13 +1348,13 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
         auto&& tangent = tangents[k];
 
         double mt    = tangent.getLength();
-        APO_Point mu = line.line.end_point - line.line.begin_point;
+        APO_Point mu = line.end_point - line.begin_point;
         mu.setMagnitude(mt);
         APO_Point u    = m + mu;
         APO_Point v    = m - mu;
-        APO_Line orthU = line.line;
+        APO_Line orthU = line;
         orthU.rotate(M_PI / 2, u);
-        APO_Line orthV = line.line;
+        APO_Line orthV = line;
         orthV.rotate(M_PI / 2, v);
 
         APO_Point pps;
@@ -1284,31 +1380,291 @@ getSolutionFromPLC(const APO_Object& point, const APO_Object& line,
 }
 
 std::vector<APO_Circle>
-getSolutionFromLLL(const APO_Object& line1, const APO_Object& line2,
-                   const APO_Object& line3)
+getSolutionFromLLL(const APO_Line& line1, const APO_Line& line2,
+                   const APO_Line& line3)
 {
-  return std::vector<APO_Circle>();
+  /*
+  situations:
+  0: all lines are parallel (no solutions)
+  3: lines 2 and 3 are parallel
+  5: lines 1 and 3 are parallel
+  6: lines 1 and 2 are parallel
+  7: none of the lines are parallel (4 solutions)
+  */
+
+  int situation = 0;
+  std::vector<APO_Line> angleBisectors1, angleBisectors2, angleBisectors3;
+  if (getIntersectsWithLL(line1, line2, false))
+  {
+    situation += 1;
+  }
+  if (getIntersectsWithLL(line1, line3, false))
+  {
+    situation += 2;
+  }
+  if (getIntersectsWithLL(line2, line3, false))
+  {
+    situation += 4;
+  }
+
+  if (situation == 3 || situation == 5 || situation == 7)
+  {
+    angleBisectors1 = getAngleBisectors(line1, line2);
+  }
+  if (situation == 3 || situation == 6 || situation == 7)
+  {
+    angleBisectors2 = getAngleBisectors(line1, line3);
+  }
+  if (situation == 5 || situation == 6)
+  {
+    angleBisectors3 = getAngleBisectors(line2, line3);
+  }
+
+  std::vector<APO_Point> centerPoints;
+
+#define LLL_CONCAT(l1, l2)                                                    \
+  if (getIntersectionLL(l1, l2, false, p))                                    \
+    centerPoints.push_back(p);
+
+  APO_Point p;
+  if (situation == 3 || situation == 7)
+  {
+    LLL_CONCAT(angleBisectors1[0], angleBisectors2[0])
+    LLL_CONCAT(angleBisectors1[0], angleBisectors2[1])
+    LLL_CONCAT(angleBisectors1[1], angleBisectors2[0])
+    LLL_CONCAT(angleBisectors1[1], angleBisectors2[1])
+  }
+  else if (situation == 5)
+  {
+    LLL_CONCAT(angleBisectors1[0], angleBisectors3[0])
+    LLL_CONCAT(angleBisectors1[0], angleBisectors3[1])
+    LLL_CONCAT(angleBisectors1[1], angleBisectors3[0])
+    LLL_CONCAT(angleBisectors1[1], angleBisectors3[1])
+  }
+  else if (situation == 6)
+  {
+    LLL_CONCAT(angleBisectors2[0], angleBisectors3[0])
+    LLL_CONCAT(angleBisectors2[0], angleBisectors3[1])
+    LLL_CONCAT(angleBisectors2[1], angleBisectors3[0])
+    LLL_CONCAT(angleBisectors2[1], angleBisectors3[1])
+  }
+
+#undef LLL_CONCAT
+
+  std::vector<APO_Circle> ret;
+  double radius;
+  for (size_t i = 0; i < centerPoints.size(); ++i)
+  {
+    APO_Point c   = centerPoints[i];
+    double radius = line1.getDistanceTo(c, false);
+    ret.push_back(APO_Circle(c, radius));
+  }
+  return ret;
 }
 
 std::vector<APO_Circle>
-getSolutionFromLLC(const APO_Object& line1, const APO_Object& line2,
-                   const APO_Object& circle)
+getSolutionFromLLC(const APO_Line& line1, const APO_Line& line2,
+                   const APO_Circle& circle)
 {
-  return std::vector<APO_Circle>();
+  std::vector<APO_Line> parallels1
+      = line1.getOffset(circle.radius, 1, BothSides);
+  std::vector<APO_Line> parallels2
+      = line2.getOffset(circle.radius, 1, BothSides);
+
+  std::vector<APO_Object> arr1;
+  std::vector<APO_Object> arr2;
+  std::vector<APO_Object> arr3;
+  std::vector<APO_Object> arr4;
+
+  arr1.push_back(APO_Object(circle.center));
+  arr2.push_back(APO_Object(circle.center));
+  arr3.push_back(APO_Object(circle.center));
+  arr4.push_back(APO_Object(circle.center));
+
+  arr1.push_back(APO_Object(parallels1[0]));
+  arr2.push_back(APO_Object(parallels1[0]));
+  arr3.push_back(APO_Object(parallels1[1]));
+  arr4.push_back(APO_Object(parallels1[1]));
+
+  arr1.push_back(APO_Object(parallels2[0]));
+  arr2.push_back(APO_Object(parallels2[1]));
+  arr3.push_back(APO_Object(parallels2[0]));
+  arr4.push_back(APO_Object(parallels2[1]));
+
+  std::vector<APO_Circle> cArr1 = getSolution(arr1[0], arr1[1], arr1[2]);
+  std::vector<APO_Circle> cArr2 = getSolution(arr2[0], arr2[1], arr2[2]);
+  std::vector<APO_Circle> cArr3 = getSolution(arr3[0], arr3[1], arr3[2]);
+  std::vector<APO_Circle> cArr4 = getSolution(arr4[0], arr4[1], arr4[2]);
+
+  std::vector<APO_Circle> ret;
+
+  auto llc_inner = [&](std::vector<APO_Circle>& cArr)
+  {
+    for (size_t k = 0; k < cArr.size(); ++k)
+    {
+      auto&& obj           = cArr[k];
+      APO_Circle tmpCircle = obj;
+      APO_Circle obj1      = obj;
+      APO_Circle obj2      = obj;
+      obj1.radius += circle.radius;
+      obj2.radius = fabs(obj2.radius - circle.radius);
+
+      double d1 = obj1.center.getDistanceTo(circle.center);
+      if ((fuzzyCompare(d1, obj1.radius + circle.radius)
+           || fuzzyCompare(d1, fabs(obj1.radius - circle.radius)))
+          && fuzzyCompare(line1.getDistanceTo(obj1.center, false), obj1.radius)
+          && fuzzyCompare(line2.getDistanceTo(obj1.center, false),
+                          obj1.radius))
+      {
+
+        ret.push_back(obj1);
+      }
+
+      double d2 = obj2.center.getDistanceTo(circle.center);
+      if ((fuzzyCompare(d2, obj2.radius + circle.radius)
+           || fuzzyCompare(d2, fabs(obj2.radius - circle.radius)))
+          && fuzzyCompare(line1.getDistanceTo(obj2.center, false), obj2.radius)
+          && fuzzyCompare(line2.getDistanceTo(obj2.center, false),
+                          obj2.radius))
+      {
+
+        ret.push_back(obj2);
+      }
+    }
+  };
+
+  llc_inner(cArr1);
+  llc_inner(cArr2);
+  llc_inner(cArr3);
+  llc_inner(cArr4);
+  return ret;
 }
 
 std::vector<APO_Circle>
-getSolutionFromLCC(const APO_Object& line, const APO_Object& circle2,
-                   const APO_Object& circle3)
+getSolutionFromLCC(const APO_Object& line, const APO_Object& circle1,
+                   const APO_Object& circle2)
 {
-  return std::vector<APO_Circle>();
+  auto lCC_Circle_Create
+      = [&](std::vector<APO_Circle>& ret, const std::vector<APO_Circle>& cArr)
+  {
+    for (size_t k = 0; k < cArr.size(); ++k)
+    {
+      auto&& obj = cArr[k];
+
+      APO_Circle tmpCircle = obj;
+      APO_Circle obj1      = obj;
+      APO_Circle obj2      = obj;
+      obj1.radius += circle1.circle.radius;
+      obj2.radius = fabs(obj2.radius - circle1.circle.radius);
+
+      double obj1c1 = obj1.center.getDistanceTo(circle1.circle.center);
+      double obj1c2 = obj1.center.getDistanceTo(circle2.circle.center);
+      if ((fuzzyCompare(obj1c1, circle1.circle.radius + obj1.radius)
+           || fuzzyCompare(obj1c1, fabs(circle1.circle.radius - obj1.radius)))
+          && (fuzzyCompare(obj1c2, circle2.circle.radius + obj1.radius)
+              || fuzzyCompare(obj1c2,
+                              fabs(circle2.circle.radius - obj1.radius)))
+          && fuzzyCompare(line.line.getDistanceTo(obj1.center, false),
+                          obj1.radius))
+      {
+
+        ret.push_back(obj1);
+      }
+
+      double obj2c1 = obj2.center.getDistanceTo(circle1.circle.center);
+      double obj2c2 = obj2.center.getDistanceTo(circle2.circle.center);
+      if ((fuzzyCompare(obj2c1, circle1.circle.radius + obj2.radius)
+           || fuzzyCompare(obj2c1, fabs(circle1.circle.radius - obj2.radius)))
+          && (fuzzyCompare(obj2c2, circle2.circle.radius + obj2.radius)
+              || fuzzyCompare(obj2c2,
+                              fabs(circle2.circle.radius - obj2.radius)))
+          && fuzzyCompare(line.line.getDistanceTo(obj2.center, false),
+                          obj2.radius))
+      {
+
+        ret.push_back(obj2);
+      }
+    }
+  };
+
+  auto LCC =
+      [lCC_Circle_Create](const APO_Object& line, const APO_Object& circle1,
+                          const APO_Object& circle2) -> std::vector<APO_Circle>
+  {
+    // find solutions for tangent to:
+    // center point of smaller circle,
+    // concentric circles for larger circle with distance = radius of smaller circle
+    // parallels to line with distance = radius of smaller circle
+    std::vector<APO_Object> arr1;
+    std::vector<APO_Object> arr2;
+    std::vector<APO_Object> arr3;
+    std::vector<APO_Object> arr4;
+
+    arr1.push_back(APO_Object(circle1.circle.center));
+    arr2.push_back(APO_Object(circle1.circle.center));
+    arr3.push_back(APO_Object(circle1.circle.center));
+    arr4.push_back(APO_Object(circle1.circle.center));
+
+    APO_Object circle21 = circle2;
+    circle21.circle.radius += circle1.circle.radius;
+    arr1.push_back(circle21);
+    arr3.push_back(circle21);
+
+    if (fuzzyCompare(circle1.circle.radius, circle2.circle.radius))
+    {
+      arr2.push_back(APO_Object(circle2.circle.center));
+      arr3.push_back(APO_Object(circle2.circle.center));
+    }
+    else
+    {
+      APO_Object circle22 = circle2;
+      circle22.circle.radius
+          = fabs(circle22.circle.radius - circle1.circle.radius);
+      arr2.push_back(circle22);
+      arr4.push_back(circle22);
+    }
+
+    std::vector<APO_Line> parallels
+        = line.line.getOffset(circle1.circle.radius, 1, BothSides);
+    arr1.push_back(APO_Object(parallels[0]));
+    arr2.push_back(APO_Object(parallels[0]));
+    arr3.push_back(APO_Object(parallels[1]));
+    arr4.push_back(APO_Object(parallels[1]));
+
+    auto&& cArr1 = getSolution(arr1[0], arr1[1], arr1[2]);
+    auto&& cArr2 = getSolution(arr2[0], arr2[1], arr2[2]);
+    auto&& cArr3 = getSolution(arr3[0], arr3[1], arr3[2]);
+    auto&& cArr4 = getSolution(arr4[0], arr4[1], arr4[2]);
+
+    std::vector<APO_Circle> ret;
+    lCC_Circle_Create(ret, cArr1);
+    lCC_Circle_Create(ret, cArr2);
+    lCC_Circle_Create(ret, cArr3);
+    lCC_Circle_Create(ret, cArr4);
+
+    return ret;
+  };
+
+  if (!APO_IS_LINE(line) || !APO_IS_CIRCLE(circle1) || !APO_IS_CIRCLE(circle2))
+  {
+    return APO_EMPTY_RES;
+  }
+
+  if (circle1.circle.radius > circle2.circle.radius)
+  {
+    return LCC(line, circle2, circle1);
+  }
+  else
+  {
+    return LCC(line, circle1, circle2);
+  }
 }
 
 std::vector<APO_Circle>
-getSolutionFromCCC(const APO_Object& circle1, const APO_Object& circle2,
-                   const APO_Object& circle3)
+getSolutionFromCCC(const APO_Object& c1, const APO_Object& c2,
+                   const APO_Object& c3)
 {
-  return std::vector<APO_Circle>();
+  return APO_EMPTY_RES;
 }
 
 bool
@@ -1352,6 +1708,235 @@ fuzzyCompare(double a, double b)
 void
 sortPointsLRTB(std::vector<APO_Point>& points)
 {
+}
+
+/* ------------------------ APO_Point function impls ------------------------ */
+
+APO_Point::APO_Point() : x(0.0), y(0.0), valid(true) {}
+
+APO_Point::APO_Point(double vx, double vy, bool valid_in)
+{
+  x     = fabs(vx) < APO_TOLERANCE ? 0.0 : vx;
+  y     = fabs(vy) < APO_TOLERANCE ? 0.0 : vy;
+  valid = valid_in && NumberIsNormal(x) && NumberIsNormal(y);
+}
+
+bool
+APO_Point::isValid() const
+{
+  return valid;
+}
+
+void
+APO_Point::setPolar(double radius, double angle)
+{
+  x     = radius * cos(angle);
+  y     = radius * sin(angle);
+  x     = fabs(x) < APO_TOLERANCE ? 0.0 : x;
+  y     = fabs(y) < APO_TOLERANCE ? 0.0 : y;
+  valid = NumberIsNormal(radius) && NumberIsNormal(angle);
+}
+
+void
+APO_Point::setAngle(double a)
+{
+  double m = getMagnitude();
+  setPolar(m, a);
+}
+
+double
+APO_Point::getAngle() const
+{
+  double ret = 0.0;
+  double m   = getMagnitude();
+
+  if (m > 1.0e-6)
+  {
+    double dp = getDotProduct(*this, APO_Point(1.0, 0.0));
+    if (dp / m >= 1.0)
+    {
+      ret = 0.0;
+    }
+    else if (dp / m < -1.0)
+    {
+      ret = M_PI;
+    }
+    else
+    {
+      ret = acos(dp / m);
+    }
+    if (y < 0.0)
+    {
+      ret = 2 * M_PI - ret;
+    }
+  }
+  return ret;
+}
+
+double
+APO_Point::getAngleTo(const APO_Point& v) const
+{
+  if (!valid || !v.valid)
+  {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  else
+  {
+    return (v - *this).getAngle();
+  }
+}
+
+void
+APO_Point::setMagnitude(double m)
+{
+  double a = getAngle();
+  setPolar(m, a);
+}
+
+double
+APO_Point::getMagnitude() const
+{
+  if (!valid)
+  {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  return sqrt(x * x + y * y);
+}
+
+double
+APO_Point::getDistanceTo(const APO_Point& v, bool limited = true) const
+{
+  if (!valid || !v.valid)
+  {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  else
+  {
+    return (*this - v).getMagnitude();
+  }
+}
+
+bool
+APO_Point::equalsFuzzy(const APO_Point& point) const
+{
+  return fuzzyCompare(x, point.x) && fuzzyCompare(y, point.y);
+}
+
+APO_Point
+APO_Point::operator+(const APO_Point& v) const
+{
+  return APO_Point(x + v.x, y + v.y, valid && v.valid);
+}
+
+APO_Point
+APO_Point::operator-(const APO_Point& v) const
+{
+  return APO_Point(x - v.x, y - v.y, valid && v.valid);
+}
+
+APO_Point
+APO_Point::operator*(double s) const
+{
+  return APO_Point(x * s, y * s, valid);
+}
+
+APO_Point
+APO_Point::operator/(double s) const
+{
+  return APO_Point(x / s, y / s, valid);
+}
+
+double
+APO_Point::getDotProduct(const APO_Point& v1, const APO_Point& v2)
+{
+  return v1.x * v2.x + v1.y * v2.y;
+}
+
+APO_Point&
+APO_Point::operator+=(const APO_Point& v)
+{
+  x += v.x;
+  y += v.y;
+  valid = valid && v.valid;
+  return *this;
+}
+
+APO_Point&
+APO_Point::operator-=(const APO_Point& v)
+{
+  x -= v.x;
+  y -= v.y;
+  valid = valid && v.valid;
+  return *this;
+}
+
+APO_Point&
+APO_Point::operator*=(double s)
+{
+  x *= s;
+  y *= s;
+  return *this;
+}
+
+APO_Point&
+APO_Point::operator/=(double s)
+{
+  x /= s;
+  y /= s;
+  return *this;
+}
+
+APO_Point
+APO_Point::getAverage(const APO_Point& v1, const APO_Point& v2)
+{
+  return (v1 + v2) / 2.0;
+}
+
+double
+APO_Point::getCrossProduct(const APO_Point& v1, const APO_Point& v2)
+{
+  return v1.x * v2.y - v1.y * v2.x;
+}
+
+APO_Point
+APO_Point::createPolar(double radius, double angle)
+{
+  APO_Point ret;
+  ret.setPolar(radius, angle);
+  return ret;
+}
+
+std::vector<APO_Point>
+APO_Point::getUnique(const std::vector<APO_Point>& vectors)
+{
+
+  auto findFirstFuzzy
+      = [](const std::vector<APO_Point>& vectors, const APO_Point& v)
+  {
+    for (int i = 0; i < vectors.size(); i++)
+    {
+      if (v.equalsFuzzy(vectors[i]))
+      {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
+  auto containsFuzzy
+      = [&](const std::vector<APO_Point>& vectors, const APO_Point& v)
+  { return findFirstFuzzy(vectors, v) != -1; };
+
+  std::vector<APO_Point> ret;
+  for (int i = 0; i < vectors.size(); i++)
+  {
+    if (!containsFuzzy(ret, vectors[i]))
+    {
+      ret.push_back(vectors[i]);
+    }
+  }
+  return ret;
 }
 
 /* ------------------------------- capi impls ------------------------------- */
@@ -1436,81 +2021,10 @@ apo_solve(apo_t* apo, apo_solution_t** solution)
 
   *solution = new apo_solution();
 
-  std::vector<APO_Object> pointObjs;
-  std::vector<APO_Object> lineObjs;
-  std::vector<APO_Object> circleObjs;
-
-#define OBJECT_CLASSIFICATION(obj)                                            \
-  switch (obj.type)                                                           \
-  {                                                                           \
-  case APO_POINT_TYPE:                                                        \
-    pointObjs.push_back(obj);                                                 \
-    break;                                                                    \
-  case APO_LINE_TYPE:                                                         \
-    lineObjs.push_back(obj);                                                  \
-    break;                                                                    \
-  case APO_CIRCLE_TYPE:                                                       \
-    circleObjs.push_back(obj);                                                \
-    break;                                                                    \
-  };
-
-  OBJECT_CLASSIFICATION(apo->objects[0]);
-  OBJECT_CLASSIFICATION(apo->objects[1]);
-  OBJECT_CLASSIFICATION(apo->objects[2]);
-
-  std::vector<APO_Circle> res;
-  if (pointObjs.size() == 3)
-  {
-
-    res = getSolutionFromPPP(pointObjs[0], pointObjs[1], pointObjs[2]);
-  }
-  else if (pointObjs.size() == 2)
-  {
-    if (circleObjs.size() == 1)
-    {
-      res = getSolutionFromPPC(pointObjs[0], pointObjs[1], circleObjs[0]);
-    }
-    else if (lineObjs.size() == 1)
-    {
-      res = getSolutionFromPPL(pointObjs[0], pointObjs[1], lineObjs[0]);
-    }
-  }
-  else if (pointObjs.size() == 1)
-  {
-    if (circleObjs.size() == 2)
-    {
-      res = getSolutionFromPCC(pointObjs[0], circleObjs[0], circleObjs[1]);
-    }
-    else if (lineObjs.size() == 2)
-    {
-      res = getSolutionFromPLL(pointObjs[0], lineObjs[0], lineObjs[1]);
-    }
-    else if (circleObjs.size() == 1 && lineObjs.size() == 1)
-    {
-      res = getSolutionFromPLC(pointObjs[0], lineObjs[0], circleObjs[0]);
-    }
-  }
-  else if (pointObjs.size() == 0)
-  {
-    if (lineObjs.size() == 3)
-    {
-      res = getSolutionFromLLL(lineObjs[0], lineObjs[1], lineObjs[2]);
-    }
-    else if (lineObjs.size() == 2 && circleObjs.size() == 1)
-    {
-      res = getSolutionFromLLC(lineObjs[0], lineObjs[1], circleObjs[0]);
-    }
-    else if (lineObjs.size() == 1 && circleObjs.size() == 2)
-    {
-      res = getSolutionFromLCC(lineObjs[0], circleObjs[0], circleObjs[1]);
-    }
-    else if (circleObjs.size() == 3)
-    {
-      res = getSolutionFromCCC(circleObjs[0], circleObjs[1], circleObjs[2]);
-    }
-  }
-
-#undef OBJECT_CLASSIFICATION
+  std::vector<APO_Circle> res
+      = getSolution(apo->objects[0], apo->objects[1], apo->objects[2]);
+  if (res.empty())
+    return false;
 
   for (auto&& c : res)
   {
