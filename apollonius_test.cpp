@@ -27,7 +27,7 @@
   apo_destroy(apo);
 
 
-int
+void
 test_ppp()
 {
   {
