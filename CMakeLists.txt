@@ -9,9 +9,6 @@ option(BUILD_TESTING "build apollonius solution tests" OFF)
 add_library(apollonius STATIC apollonius.cpp)
 
 if(BUILD_TESTING)
-
-file(GLOB test_files ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
-foreach(file ${test_files})
-    
-endforeach()
+    add_executable(apollonius_test apollonius_test.cpp)
+    target_link_libraries(apollonius_test apollonius)
 endif()

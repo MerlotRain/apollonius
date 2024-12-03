@@ -21,12 +21,15 @@
  */
 
 #include "apollonius.h"
+#include <algorithm>
+#include <array>
 #include <assert.h>
 #include <cmath>
-#include <vector>
-#include <algorithm>
+#include <iostream>
 #include <set>
-#include <array>
+#include <vector>
+#include <numeric>
+#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -106,9 +109,10 @@ struct APO_Point
       return true;
     }
     return false;
- }
+  }
 
-  friend bool operator!=(const APO_Point& lhs, const APO_Point& rhs)
+  friend bool
+  operator!=(const APO_Point& lhs, const APO_Point& rhs)
   {
     return !(lhs == rhs);
   }
@@ -175,34 +179,38 @@ struct APO_Shape
   APO_Shape(const APO_Circle& c);
 };
 
-template<class T>
-bool isUndefined(const T& t)
+template <class T>
+bool
+isUndefined(const T& t)
 {
   return false;
 }
 
-template<>
+template <>
 bool
 isUndefined<APO_Point>(const APO_Point& t)
 {
   return std::isnan(t.x) && std::isnan(t.y) && !t.valid;
 }
 
-template<>
-bool 
+template <>
+bool
 isUndefined<APO_Line>(const APO_Line& t)
 {
-  return isUndefined<APO_Point>(t.begin_point) && isUndefined<APO_Point>(t.end_point);
+  return isUndefined<APO_Point>(t.begin_point)
+         && isUndefined<APO_Point>(t.end_point);
 }
 
-template<>
-bool isUndefined<APO_Circle>(const APO_Circle& t)
+template <>
+bool
+isUndefined<APO_Circle>(const APO_Circle& t)
 {
   return isUndefined<APO_Point>(t.center) && std::isnan(t.radius);
 }
 
-template<class T>
-T undefined()
+template <class T>
+T
+undefined()
 {
   return T::undefined;
 }
@@ -271,22 +279,22 @@ static std::vector<APO_Circle> getSolutionFromCCC(const APO_Circle& circle1,
                                                   const APO_Circle& circle2,
                                                   const APO_Circle& circle3);
 
-template<class T, class E>
-static std::vector<APO_Point> getIntersectionPoints(const T& t, const E& e, bool limited = true);
+template <class T, class E>
+static std::vector<APO_Point> getIntersectionPoints(const T& t, const E& e,
+                                                    bool limited = true);
 template <>
-static std::vector<APO_Point> getIntersectionPoints<APO_Circle, APO_Circle>(
+std::vector<APO_Point> getIntersectionPoints<APO_Circle, APO_Circle>(
     const APO_Circle& t, const APO_Circle& e, bool limited);
 template <>
-static std::vector<APO_Point>
+std::vector<APO_Point>
 getIntersectionPoints<APO_Line, APO_Line>(const APO_Line& t, const APO_Line& e,
                                           bool limited);
 template <>
-static std::vector<APO_Point>
+std::vector<APO_Point>
 getIntersectionPoints<APO_Line, APO_Circle>(const APO_Line& t,
-                                            const APO_Circle& e, bool limited);                   
+                                            const APO_Circle& e, bool limited);
 
-
-template<class T, class E>
+template <class T, class E>
 static bool isIntersectWith(const T& t, const E& e, bool limited);
 
 static bool pointIsOnLine(const APO_Point& point, const APO_Line& line,
@@ -300,29 +308,26 @@ static std::vector<APO_Line> getAngleBisectors(const APO_Line& line1,
 static APO_Point getCommonIntersectionPoint(const APO_Circle& c1,
                                             const APO_Circle& c2,
                                             const APO_Circle& c3);
-static APO_Point getPowerCenter(const APO_Circle& c1,
-                                            const APO_Circle& c2,
-                                            const APO_Circle& c3);
+static APO_Point getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
+                                const APO_Circle& c3);
 static std::vector<APO_Line> getSimilarityAxes(const APO_Circle& c1,
                                                const APO_Circle& c2,
                                                const APO_Circle& c3);
-static APO_Point getPole(const APO_Circle& circle, const APO_Line& polarLine);                                             
+static APO_Point getPole(const APO_Circle& circle, const APO_Line& polarLine);
 static std::vector<APO_Circle> getSolutionsCCCAlt(const APO_Circle& circle1,
                                                   const APO_Circle& circle2,
                                                   const APO_Circle& circle3);
-template<class T>
-static std::vector<T>
-verify(const std::vector<T>& candidates, const APO_Shape& shape1,
-       const APO_Shape& shape2, const APO_Shape& shape3);
+template <class T>
+static std::vector<T> verify(const std::vector<T>& candidates,
+                             const APO_Shape& shape1, const APO_Shape& shape2,
+                             const APO_Shape& shape3);
 
 static std::vector<APO_Circle>
 getCircles2TR(const APO_Line shp1, const APO_Line& shp2, double radius,
               const APO_Point& pos = APO_Point());
 
-template<class T>
-static std::vector<T>
-removeDuplicates(const std::vector<T>& shaps);
-
+template <class T>
+static std::vector<T> removeDuplicates(const std::vector<T>& shaps);
 
 /* ------------------------- template function impls ------------------------ */
 
@@ -351,201 +356,203 @@ getIntersectionPoints(const T& t, const E& e, bool limited)
 }
 
 template <>
-std::vector<APO_Point> getIntersectionPoints<APO_Circle, APO_Circle>(
-    const APO_Circle& circle1, const APO_Circle& circle2, bool limited)
+std::vector<APO_Point>
+getIntersectionPoints<APO_Circle, APO_Circle>(const APO_Circle& circle1,
+                                              const APO_Circle& circle2,
+                                              bool limited)
 {
 
-    std::vector<APO_Point> res;
+  std::vector<APO_Point> res;
 
-    double r1 = circle1.radius;
-    double r2 = circle2.radius;
-    if (r1 < r2)
-    {
-      return getIntersectionPoints<APO_Circle, APO_Circle>(circle2, circle1);
-    }
+  double r1 = circle1.radius;
+  double r2 = circle2.radius;
+  if (r1 < r2)
+  {
+    return getIntersectionPoints<APO_Circle, APO_Circle>(circle2, circle1);
+  }
 
-    APO_Point c1 = circle1.center;
-    APO_Point c2 = circle2.center;
+  APO_Point c1 = circle1.center;
+  APO_Point c2 = circle2.center;
 
-    APO_Point u  = c2 - c1;
-    double u_mag = u.getMagnitude();
+  APO_Point u  = c2 - c1;
+  double u_mag = u.getMagnitude();
 
-    // concentric
-    if (u_mag < APO_TOLERANCE)
-    {
-      return res;
-    }
-
-    double tol = (r1 + r2) / 200000;
-
-    // the two circles (almost) touch externally / internally in one point
-    // (tangent):
-    if (fabs(u_mag - (r1 + r2)) < tol || fabs(u_mag - fabs(r1 - r2)) < tol)
-    {
-      u.setMagnitude(r1);
-      res.push_back(c1 + u);
-      return res;
-    }
-
-    APO_Point v(u.y, -u.x);
-
-    double s, t1, t2, term;
-    s = 1.0 / 2.0 * ((r1 * r1 - r2 * r2) / (pow(u_mag, 2.0)) + 1.0);
-
-    term = (r1 * r1) / (pow(u_mag, 2.0)) - s * s;
-
-    // no intersection:
-    if (term < 0.0)
-    {
-      return res;
-    }
-
-    // one or two intersections:
-    t1 = sqrt(term);
-    t2 = -sqrt(term);
-
-    APO_Point sol1 = c1 + u * s + v * t1;
-    APO_Point sol2 = c1 + u * s + v * t2;
-
-    if (fabs(sol1.x - sol2.x) < tol && fabs(sol1.y - sol2.y) < tol)
-    {
-      res.push_back(sol1);
-    }
-    else
-    {
-      res.push_back(sol1);
-      res.push_back(sol2);
-    }
+  // concentric
+  if (u_mag < APO_TOLERANCE)
+  {
     return res;
+  }
+
+  double tol = (r1 + r2) / 200000;
+
+  // the two circles (almost) touch externally / internally in one point
+  // (tangent):
+  if (fabs(u_mag - (r1 + r2)) < tol || fabs(u_mag - fabs(r1 - r2)) < tol)
+  {
+    u.setMagnitude(r1);
+    res.push_back(c1 + u);
+    return res;
+  }
+
+  APO_Point v(u.y, -u.x);
+
+  double s, t1, t2, term;
+  s = 1.0 / 2.0 * ((r1 * r1 - r2 * r2) / (pow(u_mag, 2.0)) + 1.0);
+
+  term = (r1 * r1) / (pow(u_mag, 2.0)) -s * s;
+
+  // no intersection:
+  if (term < 0.0)
+  {
+    return res;
+  }
+
+  // one or two intersections:
+  t1 = sqrt(term);
+  t2 = -sqrt(term);
+
+  APO_Point sol1 = c1 + u * s + v * t1;
+  APO_Point sol2 = c1 + u * s + v * t2;
+
+  if (fabs(sol1.x - sol2.x) < tol && fabs(sol1.y - sol2.y) < tol)
+  {
+    res.push_back(sol1);
+  }
+  else
+  {
+    res.push_back(sol1);
+    res.push_back(sol2);
+  }
+  return res;
 }
 
 template <>
 std::vector<APO_Point>
-getIntersectionPoints<APO_Line, APO_Line>(const APO_Line& line1, const APO_Line& line2,
-                                          bool limited)
+getIntersectionPoints<APO_Line, APO_Line>(const APO_Line& line1,
+                                          const APO_Line& line2, bool limited)
 {
-    std::vector<APO_Point> res;
-    double a1 = line1.end_point.y - line1.begin_point.y;
-    double b1 = line1.begin_point.x - line1.end_point.x;
-    double c1 = a1 * line1.begin_point.x + b1 * line1.begin_point.y;
+  std::vector<APO_Point> res;
+  double a1 = line1.end_point.y - line1.begin_point.y;
+  double b1 = line1.begin_point.x - line1.end_point.x;
+  double c1 = a1 * line1.begin_point.x + b1 * line1.begin_point.y;
 
-    double a2 = line2.end_point.y - line2.begin_point.y;
-    double b2 = line2.begin_point.x - line2.end_point.x;
-    double c2 = a2 * line2.begin_point.x + b2 * line2.begin_point.y;
+  double a2 = line2.end_point.y - line2.begin_point.y;
+  double b2 = line2.begin_point.x - line2.end_point.x;
+  double c2 = a2 * line2.begin_point.x + b2 * line2.begin_point.y;
 
-    double det = a1 * b2 - a2 * b1;
-    if (fabs(det) < 1.0e-6)
-    {
-      return res;
-    }
-    else
-    {
-      APO_Point v((b2 * c1 - b1 * c2) / det, (a1 * c2 - a2 * c1) / det);
-
-      if ((!limited || 0 == pointIsOnLine(v, line1, limited))
-          && (!limited || 0 == pointIsOnLine(v, line2, limited)))
-      {
-        res.push_back(v);
-      }
-    }
+  double det = a1 * b2 - a2 * b1;
+  if (fabs(det) < 1.0e-6)
+  {
     return res;
+  }
+  else
+  {
+    APO_Point v((b2 * c1 - b1 * c2) / det, (a1 * c2 - a2 * c1) / det);
+
+    if ((!limited || 0 == pointIsOnLine(v, line1, limited))
+        && (!limited || 0 == pointIsOnLine(v, line2, limited)))
+    {
+      res.push_back(v);
+    }
+  }
+  return res;
 }
 
 template <>
 std::vector<APO_Point>
 getIntersectionPoints<APO_Line, APO_Circle>(const APO_Line& line,
-                                            const APO_Circle& circle, bool limited)
+                                            const APO_Circle& circle,
+                                            bool limited)
 {
 
-    std::vector<APO_Point> res;
+  std::vector<APO_Point> res;
 
-    APO_Point vLineCenter = line.getVectorTo(circle.center, false);
-    double dist           = vLineCenter.getMagnitude();
+  APO_Point vLineCenter = line.getVectorTo(circle.center, false);
+  double dist           = vLineCenter.getMagnitude();
 
-    // special case: arc almost touches line (tangent with tiny gap or tiny
-    // overlap):
-    if (fuzzyCompare(dist, circle.radius))
+  // special case: arc almost touches line (tangent with tiny gap or tiny
+  // overlap):
+  if (fuzzyCompare(dist, circle.radius))
+  {
+    APO_Point sol = circle.center - vLineCenter;
+    if (!limited || pointIsOnLine(sol, line, true))
     {
-      APO_Point sol = circle.center - vLineCenter;
-      if (!limited || pointIsOnLine(sol, line, true))
-      {
-        res.push_back(sol);
-      }
-      return res;
+      res.push_back(sol);
     }
-
-    APO_Point p = line.begin_point;
-    APO_Point d = line.end_point - line.begin_point;
-    if (d.getMagnitude() < 1.0e-6)
-    {
-      return res;
-    }
-
-    APO_Point delta = p - circle.center;
-
-    // root term:
-    double term = std::pow(APO_Point::getDotProduct(d, delta), 2.0)
-                  - std::pow(d.getMagnitude(), 2.0)
-                        * (std::pow(delta.getMagnitude(), 2.0)
-                           - std::pow(circle.radius, 2.0));
-
-    // no intersection:
-    if (term < 0.0)
-    {
-      return res;
-    }
-
-    // one or two intersections:
-    double t1 = (-APO_Point::getDotProduct(d, delta) + sqrt(term))
-                / std::pow(d.getMagnitude(), 2.0);
-    double t2;
-    bool tangent = false;
-
-    // only one intersection:
-    if (fabs(term) < APO_TOLERANCE)
-    {
-      t2      = t1;
-      tangent = true;
-    }
-
-    // two intersections
-    else
-    {
-      t2 = (-APO_Point::getDotProduct(d, delta) - sqrt(term))
-           / std::pow(d.getMagnitude(), 2.0);
-    }
-
-    APO_Point sol1;
-    APO_Point sol2(0, 0, false);
-
-    sol1 = p + d * t1;
-
-    if (!tangent)
-    {
-      sol2 = p + d * t2;
-    }
-
-    if (!limited || pointIsOnLine(sol1, line, true))
-    {
-      res.push_back(sol1);
-    }
-    if (sol2.isValid())
-    {
-      if (!limited || pointIsOnLine(sol2, line, true))
-      {
-        res.push_back(sol2);
-      }
-    }
-    // ret.setTangent(tangent);
-
-    // tangent with two intersections very close to each other:
-    if (res.size() == 2 && res[0].equalsFuzzy(res[1]))
-    {
-      res.pop_back();
-    }
-
     return res;
+  }
 
+  APO_Point p = line.begin_point;
+  APO_Point d = line.end_point - line.begin_point;
+  if (d.getMagnitude() < 1.0e-6)
+  {
+    return res;
+  }
+
+  APO_Point delta = p - circle.center;
+
+  // root term:
+  double term = std::pow(APO_Point::getDotProduct(d, delta), 2.0)
+                - std::pow(d.getMagnitude(), 2.0)
+                      * (std::pow(delta.getMagnitude(), 2.0)
+                         - std::pow(circle.radius, 2.0));
+
+  // no intersection:
+  if (term < 0.0)
+  {
+    return res;
+  }
+
+  // one or two intersections:
+  double t1 = (-APO_Point::getDotProduct(d, delta) + sqrt(term))
+              / std::pow(d.getMagnitude(), 2.0);
+  double t2;
+  bool tangent = false;
+
+  // only one intersection:
+  if (fabs(term) < APO_TOLERANCE)
+  {
+    t2      = t1;
+    tangent = true;
+  }
+
+  // two intersections
+  else
+  {
+    t2 = (-APO_Point::getDotProduct(d, delta) - sqrt(term))
+         / std::pow(d.getMagnitude(), 2.0);
+  }
+
+  APO_Point sol1;
+  APO_Point sol2(0, 0, false);
+
+  sol1 = p + d * t1;
+
+  if (!tangent)
+  {
+    sol2 = p + d * t2;
+  }
+
+  if (!limited || pointIsOnLine(sol1, line, true))
+  {
+    res.push_back(sol1);
+  }
+  if (sol2.isValid())
+  {
+    if (!limited || pointIsOnLine(sol2, line, true))
+    {
+      res.push_back(sol2);
+    }
+  }
+  // ret.setTangent(tangent);
+
+  // tangent with two intersections very close to each other:
+  if (res.size() == 2 && res[0].equalsFuzzy(res[1]))
+  {
+    res.pop_back();
+  }
+
+  return res;
 }
 
 template <class T, class E>
@@ -582,7 +589,6 @@ removeDuplicates(const std::vector<T>& shaps)
     }
     return false;
   };
-  
 
   std::set<T, decltype(cmp)> sets(cmp);
   for (auto&& s : shaps)
@@ -662,7 +668,8 @@ getInverseShape(const APO_Shape& shp, const APO_Shape& inversionCircle,
         APO_Shape pinverse;
         if (getInverseShape(p, inversionCircle, pinverse))
         {
-          inversed = APO_Shape(APO_Circle::createFrom2Points(center, p));
+          inversed = APO_Shape(
+              APO_Circle::createFrom2Points(center, pinverse.point));
           return true;
         }
       }
@@ -772,7 +779,8 @@ getCircleTangentsThroughPoint(const APO_Circle& circle, const APO_Point& p)
   else
   {
     APO_Circle circle2 = APO_Circle::createFrom2Points(p, circle.center);
-    std::vector<APO_Point> touching_points = getIntersectionPoints(circle2, circle);
+    std::vector<APO_Point> touching_points
+        = getIntersectionPoints(circle2, circle);
     if (touching_points.size() == 1)
     {
       res.push_back(APO_Line(p, touching_points[0]));
@@ -1110,8 +1118,8 @@ getAllTangents(const APO_Shape& shp1, const APO_Shape& shp2)
   // Define a perpendicular diameter:
   APO_Point ip = line.getClosestPoint(c2Center, false); // unlimited
   if (ip.equalsFuzzy(c2Center))
-  {                                                 // APO_TOLERANCE
-    ips = getIntersectionPoints(line, c2.circle, false);// unlimited
+  {                                                       // APO_TOLERANCE
+    ips  = getIntersectionPoints(line, c2.circle, false); // unlimited
     line = APO_Line(c2Center, ips[0]);
     line.rotate(M_PI / 2, c2Center);
   }
@@ -1171,7 +1179,6 @@ getSolution(const APO_Shape& shp1, const APO_Shape& shp2,
 
   if (pointObjs.size() == 3)
   {
-
     return getSolutionFromPPP(pointObjs[0], pointObjs[1], pointObjs[2]);
   }
   else if (pointObjs.size() == 2)
@@ -1252,20 +1259,19 @@ getSolutionFromPPC(const APO_Point& point1, const APO_Point& point2,
 
   std::vector<APO_Circle> res;
 
-  if (0 == pointIsOnCircle(point1, circle)
-      && 0 == pointIsOnCircle(point2, circle))
+  if (pointIsOnCircle(point1, circle) && pointIsOnCircle(point2, circle))
   {
     return { APO_Circle(circle.center, circle.radius) };
   }
 
   APO_Point pOnCircle, pOther;
-  if (0 == pointIsOnCircle(point1, circle))
+  if (pointIsOnCircle(point1, circle))
   {
     pOnCircle = point1;
     pOther    = point2;
     return ppc(pOnCircle, pOther, circle);
   }
-  if (0 == pointIsOnCircle(point2, circle))
+  if (pointIsOnCircle(point2, circle))
   {
     pOnCircle = point2;
     pOther    = point1;
@@ -1274,7 +1280,7 @@ getSolutionFromPPC(const APO_Point& point1, const APO_Point& point2,
 
   APO_Shape inversion_cirlce;
   inversion_cirlce.type          = APO_CIRCLE_TYPE;
-  inversion_cirlce.circle.center = pOnCircle;
+  inversion_cirlce.circle.center = point1;
   inversion_cirlce.circle.radius = 10.0;
   APO_Shape circle_inverse;
   APO_Shape point2_inverse;
@@ -1319,8 +1325,9 @@ getSolutionFromPPL(const APO_Point& point1, const APO_Point& point2,
     {
       APO_Shape res_circle;
       getInverseShape(lines[i], inversion_cirlce, res_circle);
-      res.push_back(
-          APO_Circle(res_circle.circle.center, res_circle.circle.radius));
+      if (APO_IS_CIRCLE(res_circle))
+        res.push_back(
+            APO_Circle(res_circle.circle.center, res_circle.circle.radius));
     }
     return res;
   };
@@ -1603,7 +1610,7 @@ getSolutionFromPLC(const APO_Point& point, const APO_Line& line,
         continue;
 
       APO_Point a_ = ips[0];
-      
+
       ips = getIntersectionPoints(da_, line, false);
       if (ips.size() != 1)
         continue;
@@ -1626,8 +1633,7 @@ getSolutionFromPLC(const APO_Point& point, const APO_Line& line,
       APO_Line par2 = line;
       par2.moveTo(apm);
 
-      ips = getIntersectionPoints(
-          par2, circ, false);
+      ips = getIntersectionPoints(par2, circ, false);
       centerCandidates.insert(centerCandidates.end(), ips.begin(), ips.end());
     }
     // special case:
@@ -1665,9 +1671,9 @@ getSolutionFromPLC(const APO_Point& point, const APO_Line& line,
       APO_Point m = ips[0];
 
       APO_Circle efa = APO_Circle::createFrom3Points(e, f, a);
-      auto&& ps = getIntersectionPoints(da, efa, false);
+      auto&& ps      = getIntersectionPoints(da, efa, false);
       if (ps.size() < 1)
-          continue;
+        continue;
 
       APO_Point p = ps[0];
       if (p.equalsFuzzy(a) && ps.size() > 1)
@@ -1946,7 +1952,7 @@ getSolutionFromLCC(const APO_Line& line, const APO_Circle& circle1,
     }
     else
     {
-      APO_Shape circle22    = circle2;
+      APO_Shape circle22     = circle2;
       circle22.circle.radius = fabs(circle22.circle.radius - circle1.radius);
       arr2.push_back(circle22);
       arr4.push_back(circle22);
@@ -1994,7 +2000,7 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
   APO_Circle circle3 = c3;
   APO_Circle locus;
   bool realLocus = false;
-  double rDiff = std::numeric_limits<double>::quiet_NaN();
+  double rDiff   = std::numeric_limits<double>::quiet_NaN();
 
   // special case: at least two circles are concentric: no solution:
   // # Enhanced by CVH #
@@ -2032,8 +2038,8 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
       // Failed: 3 concentric circles
       return std::vector<APO_Circle>(); // No or infinite solutions
     }
-    rDiff   = c2.radius - c3.radius;
-    locus   = c2;
+    rDiff     = c2.radius - c3.radius;
+    locus     = c2;
     circle1   = c1;
     realLocus = true;
   }
@@ -2051,10 +2057,10 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
     }
 
     // Get intersections of two concentric with the other circle and the locus:
-    locus.radius = locus.radius - rDiff / 2;
-    circle1.radius = circle1.radius + fabs(rDiff / 2);
+    locus.radius               = locus.radius - rDiff / 2;
+    circle1.radius             = circle1.radius + fabs(rDiff / 2);
     std::vector<APO_Point> ips = getIntersectionPoints(locus, circle1);
-    circle1.radius = circle1.radius - fabs(rDiff);
+    circle1.radius             = circle1.radius - fabs(rDiff);
     // Avoid inversion through the center with negative radii:
     if (circle1.radius > 0)
     {
@@ -2077,17 +2083,17 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
   }
 
   // special case: three circles of equal size:
-  if (fuzzyCompare(c1.radius, c2.radius)
-      && fuzzyCompare(c1.radius, c3.radius))
+  if (fuzzyCompare(c1.radius, c2.radius) && fuzzyCompare(c1.radius, c3.radius))
   {
     // add outer and inner circles to result:
-    auto&& sol = APO_Circle::createFrom3Points(c1.center, c2.center, c3.center);
+    auto&& sol
+        = APO_Circle::createFrom3Points(c1.center, c2.center, c3.center);
     if (sol.center.isValid())
     {
       APO_Circle sol1 = sol;
       APO_Circle sol2 = sol;
-      sol1.radius = sol1.radius + c1.radius;
-      sol2.radius = fabs(sol2.radius - c1.radius);
+      sol1.radius     = sol1.radius + c1.radius;
+      sol2.radius     = fabs(sol2.radius - c1.radius);
       ret.push_back(sol1);
       ret.push_back(sol2);
     }
@@ -2111,14 +2117,12 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
   }
 
   // special case: three circles intersect in one point:
-  APO_Point commonIP
-      = getCommonIntersectionPoint(circle1, circle2, circle3);
+  APO_Point commonIP = getCommonIntersectionPoint(circle1, circle2, circle3);
   if (commonIP.isValid())
   {
     APO_Circle inversionCircle(commonIP, 10);
-    auto&& shapesInverse =  getInverseShapes<APO_Circle>(
-        { circle1, circle2, circle3 },
-                                 inversionCircle);
+    auto&& shapesInverse = getInverseShapes<APO_Circle>(
+        { circle1, circle2, circle3 }, inversionCircle);
 
     if (APO_IS_LINE(shapesInverse[0]) && APO_IS_LINE(shapesInverse[1])
         && APO_IS_LINE(shapesInverse[2]))
@@ -2136,12 +2140,11 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
     return ret;
   }
 
-
   // special case: each circle intersects the other two,
   // at least one intersects through two points:
-  std::vector<APO_Point> ips12= getIntersectionPoints(circle1, circle2);
-  std::vector<APO_Point> ips13= getIntersectionPoints(circle1, circle3);
-  std::vector<APO_Point> ips23= getIntersectionPoints(circle2, circle3);
+  std::vector<APO_Point> ips12 = getIntersectionPoints(circle1, circle2);
+  std::vector<APO_Point> ips13 = getIntersectionPoints(circle1, circle3);
+  std::vector<APO_Point> ips23 = getIntersectionPoints(circle2, circle3);
 
   size_t nIps12 = ips12.size();
   size_t nIps13 = ips13.size();
@@ -2180,8 +2183,9 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
       APO_Shape circle3Inverse;
       getInverseShape(circle3, inversionCircles[i], circle3Inverse);
 
-      auto&& iSol = getSolution(circle1Inverse, circle2Inverse, circle3Inverse);
-      auto&& sol  = getInverseShapes(iSol, inversionCircles[i]);
+      auto&& iSol
+          = getSolution(circle1Inverse, circle2Inverse, circle3Inverse);
+      auto&& sol = getInverseShapes(iSol, inversionCircles[i]);
       for (auto&& _soli : sol)
       {
         if (APO_IS_CIRCLE(_soli))
@@ -2231,8 +2235,7 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
     {
       std::vector<APO_Point> ipsRight, ipsLeft;
 
-      auto _ipssProc =
-          [&](const std::vector<APO_Point> & ips)
+      auto _ipssProc = [&](const std::vector<APO_Point>& ips)
       {
         for (size_t n = 0; n < ips.size(); ++n)
         {
@@ -2267,20 +2270,23 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
     if (!gotPoints)
     {
       std::sort(ips1.begin(), ips1.end(),
-                [&](const APO_Point& v1, const APO_Point& v2) {
+                [&](const APO_Point& v1, const APO_Point& v2)
+                {
                   return powerCenter.getDistanceTo(v1)
                          < powerCenter.getDistanceTo(v2);
                 });
       std::sort(ips2.begin(), ips2.end(),
-                [&](const APO_Point& v1, const APO_Point& v2) {
+                [&](const APO_Point& v1, const APO_Point& v2)
+                {
                   return powerCenter.getDistanceTo(v1)
                          < powerCenter.getDistanceTo(v2);
                 });
       std::sort(ips3.begin(), ips3.end(),
-                [&](const APO_Point& v1, const APO_Point& v2) {
+                [&](const APO_Point& v1, const APO_Point& v2)
+                {
                   return powerCenter.getDistanceTo(v1)
                          < powerCenter.getDistanceTo(v2);
-                });              
+                });
 
       if (ips1.size() != 2 || ips2.size() != 2 || ips3.size() != 2)
       {
@@ -2298,7 +2304,7 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
       {
         p  = ips1[1];
         pp = ips1[0];
-      }   
+      }
 
       // beta: +
       if (i == 0 || i == 2)
@@ -2311,7 +2317,7 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
       {
         q  = ips2[1];
         qq = ips2[0];
-      } 
+      }
 
       // gamma: +
       if (i == 0 || i == 1)
@@ -2341,13 +2347,21 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
 bool
 pointIsOnLine(const APO_Point& point, const APO_Line& line, bool limited)
 {
-  APO_Point vt = line.getClosestPoint(point, limited);
-  if (!vt.isValid())
-      return false;
+  double d    = std::numeric_limits<double>::quiet_NaN();
+  APO_Point v = line.getVectorTo(point, limited);
+  if (v.isValid())
+  {
+    d = v.getMagnitude();
+  }
 
-  double vtm = vt.getMagnitude();
-  return vtm < 1.0e-4 ? true : false;
+  if (std::isnan(d))
+  {
+    return false;
+  }
+  // much more tolerance here (e.g. for ellipses):
+  return d < APO_TOLERANCE;
 }
+
 bool
 pointIsOnCircle(const APO_Point& point, const APO_Circle& circle)
 {
@@ -2360,8 +2374,8 @@ pointIsOnCircle(const APO_Point& point, const APO_Circle& circle)
     return false;
   }
 
-  APO_Point vt = APO_Point::createPolar(v.getMagnitude() - circle.radius,
-                                        v.getAngle());
+  APO_Point vt
+      = APO_Point::createPolar(v.getMagnitude() - circle.radius, v.getAngle());
 
   if (vt.isValid())
   {
@@ -2378,24 +2392,26 @@ pointIsOnCircle(const APO_Point& point, const APO_Circle& circle)
 bool
 fuzzyCompare(double a, double b)
 {
-  return fabs(a-b) < APO_TOLERANCE;
+  return fabs(a - b) < APO_TOLERANCE;
 }
 
 double
 getAngleDifference(double a1, double a2)
 {
-    double ret;
+  double ret;
 
-    if (a1 >= a2) {
-        a2 += 2 * M_PI;
-    }
-    ret = a2 - a1;
+  if (a1 >= a2)
+  {
+    a2 += 2 * M_PI;
+  }
+  ret = a2 - a1;
 
-    if (ret >= 2 * M_PI) {
-        ret = 0.0;
-    }
+  if (ret >= 2 * M_PI)
+  {
+    ret = 0.0;
+  }
 
-    return ret;
+  return ret;
 }
 
 std::vector<APO_Line>
@@ -2447,7 +2463,8 @@ getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
                const APO_Circle& c3)
 {
   auto getRadicalAxis
-      = [](const APO_Circle& c1, const APO_Circle& c2) -> APO_Line {
+      = [](const APO_Circle& c1, const APO_Circle& c2) -> APO_Line
+  {
     if (!c1.center.isValid() || !c2.center.isValid() || std::isnan(c1.radius)
         || !std::isnan(c2.radius))
     {
@@ -2455,8 +2472,8 @@ getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
     }
 
     // Define a vector from center to center in 2D, its orientation and length, reject concentric:
-    APO_Point v = c2.center- c1.center;
-    double d = v.getMagnitude();
+    APO_Point v = c2.center - c1.center;
+    double d    = v.getMagnitude();
     if (d < APO_TOLERANCE)
     {
       return APO_Line(); // Failed, concentric circles
@@ -2464,7 +2481,8 @@ getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
     double dir = v.getAngle();
 
     // Define distance to center of first circle:
-    double d1 = (d + c1.radius / d * c1.radius - c2.radius / d * c2.radius) / 2;
+    double d1
+        = (d + c1.radius / d * c1.radius - c2.radius / d * c2.radius) / 2;
 
     // Define position on central axis:
     v.setMagnitude(d1);
@@ -2472,7 +2490,7 @@ getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
 
     // Define an offset vector, construct and return the radical axis:
     APO_Point offset = APO_Point::createPolar(50, dir + M_PI / 2);
-    return APO_Line(v - offset, v+offset);
+    return APO_Line(v - offset, v + offset);
   };
 
   APO_Line radicalAxis1 = getRadicalAxis(c1, c2);
@@ -2480,7 +2498,7 @@ getPowerCenter(const APO_Circle& c1, const APO_Circle& c2,
   auto&& ips = getIntersectionPoints(radicalAxis1, radicalAxis2, false);
   if (ips.size() == 0)
   {
-    return APO_Point(0,0,false);
+    return APO_Point(0, 0, false);
   }
   return ips[0];
 }
@@ -2502,7 +2520,7 @@ getSimilarityAxes(const APO_Circle& c1, const APO_Circle& c2,
     double a = 0.0;
     std::vector<APO_Point> ips;
     // Line connecting the offsets of centers
-    APO_Line line;    
+    APO_Line line;
 
     /* # Remark by CVH #
     With some exceptions any pair of circles has 2 well defined homothetic centers
@@ -2646,8 +2664,7 @@ getSimilarityAxes(const APO_Circle& c1, const APO_Circle& c2,
   hIntC = { hCenters12[1], hCenters13[1], hCenters23[1] };
 
   // Remove invalid external homothetic centers:
-  hExtC.erase(std::remove(hExtC.begin(), hExtC.end(),
-                          APO_Point::invalid),
+  hExtC.erase(std::remove(hExtC.begin(), hExtC.end(), APO_Point::invalid),
               hExtC.end());
 
   // One solution is a line connecting all valid external homothetic centers
@@ -3045,7 +3062,8 @@ APO_Point::rotate(double rotation, const APO_Point& center)
 
 /* ------------------------- APO_Line function impls ------------------------ */
 
-APO_Line APO_Line::undefined = APO_Line(APO_Point::undefined, APO_Point::undefined);
+APO_Line APO_Line::undefined
+    = APO_Line(APO_Point::undefined, APO_Point::undefined);
 
 APO_Line::APO_Line() : begin_point(0, 0), end_point(0, 0) {}
 
@@ -3054,11 +3072,15 @@ APO_Line::APO_Line(const APO_Point& begin, const APO_Point& end)
 {
 }
 
-APO_Line::APO_Line(double x1, double y1, double x2, double y2) {}
+APO_Line::APO_Line(double x1, double y1, double x2, double y2)
+    : begin_point(x1, y1), end_point(x2, y2)
+{
+}
 
 APO_Line::APO_Line(const APO_Point& begin, double angle, double distance)
 {
-  end_point = begin_point + APO_Point::createPolar(distance, angle);
+  begin_point = begin;
+  end_point   = begin_point + APO_Point::createPolar(distance, angle);
 }
 
 double
@@ -3089,7 +3111,12 @@ APO_Line::getLength() const
 APO_Point
 APO_Line::getClosestPoint(const APO_Point& p, bool limited) const
 {
-  return APO_Point();
+  APO_Point dv = getVectorTo(p, limited);
+  if (!dv.isValid())
+  {
+    return APO_Point::invalid;
+  }
+  return p - dv;
 }
 
 APO_Point
@@ -3123,7 +3150,7 @@ APO_Line::getDistanceTo(const APO_Point& point, bool limited) const
   APO_Point v = getVectorTo(point, limited);
   if (v.isValid())
     return v.getMagnitude();
-  
+
   return std::numeric_limits<double>::quiet_NaN();
 }
 
@@ -3159,7 +3186,7 @@ APO_Line::getOffset(double distance, double num, Side side) const
   for (size_t i = 0; i < sides.size(); ++i)
   {
     Side side_ = sides[i];
-    double a       = 0.0;
+    double a   = 0.0;
     if (side_ == Left)
     {
       a = begin_point.getAngleTo(end_point) + M_PI / 2.0;
@@ -3198,13 +3225,16 @@ APO_Line::getVectorTo(const APO_Point& point, bool limited) const
     return APO_Point(0, 0, false);
   }
 
-  double b = APO_Point::getDotProduct(ap, ae) / APO_Point::getDotProduct(ae, ae);
+  double b
+      = APO_Point::getDotProduct(ap, ae) / APO_Point::getDotProduct(ae, ae);
 
   if (limited && (b < 0 || b > 1.0))
   {
     // orthogonal to line does not cross line, use distance to end point:
-    APO_Point ret = begin_point.getDistanceTo(point)
-                    > end_point.getDistanceTo(point) ? end_point : begin_point;
+    APO_Point ret
+        = begin_point.getDistanceTo(point) > end_point.getDistanceTo(point)
+              ? end_point
+              : begin_point;
     return ret;
   }
 
@@ -3252,13 +3282,13 @@ APO_Circle::createFrom3Points(const APO_Point& p1, const APO_Point& p2,
 
   // middle points between first two points:
   APO_Point mp1 = APO_Point::getAverage(p1, p2);
-  double a1 = p1.getAngleTo(p2) + M_PI / 2.0;
+  double a1     = p1.getAngleTo(p2) + M_PI / 2.0;
   // direction from middle point to center:
   APO_Point dir1 = APO_Point::createPolar(1.0, a1);
 
   // middle points between last two points:
   APO_Point mp2 = APO_Point::getAverage(p2, p3);
-  double a2 = p2.getAngleTo(p3) + M_PI / 2.0;
+  double a2     = p2.getAngleTo(p3) + M_PI / 2.0;
   // direction from middle point to center:
   APO_Point dir2 = APO_Point::createPolar(1.0, a2);
 
@@ -3270,7 +3300,7 @@ APO_Circle::createFrom3Points(const APO_Point& p1, const APO_Point& p2,
     return APO_Circle();
 
   APO_Point center = ips[0];
-  double radius = center.getDistanceTo(p3);
+  double radius    = center.getDistanceTo(p3);
 
   return APO_Circle(center, radius);
 }
@@ -3278,8 +3308,8 @@ APO_Circle::createFrom3Points(const APO_Point& p1, const APO_Point& p2,
 APO_Circle
 APO_Circle::createFrom2Points(const APO_Point& p1, const APO_Point& p2)
 {
-  APO_Point center  = (p1 + p2) / 2.0;
-  double radius = p1.getDistanceTo(p2) / 2.0;
+  APO_Point center = (p1 + p2) / 2.0;
+  double radius    = p1.getDistanceTo(p2) / 2.0;
   return APO_Circle(center, radius);
 }
 
@@ -3340,6 +3370,10 @@ int
 apo_add_point(apo_t* apo, double x, double y)
 {
   assert(apo);
+#ifdef DEBUG_LOG
+  printf("add point: (%f, %f) \n", x, y);
+#endif
+
   if (apo->objects.size() > 3)
   {
     return false;
@@ -3356,6 +3390,10 @@ int
 apo_add_line(apo_t* apo, double x1, double y1, double x2, double y2)
 {
   assert(apo);
+#ifdef DEBUG_LOG
+  printf("add line: beginPoint(%f, %f), endPoint(%f, %f) \n", x1, y1, x2, y2);
+#endif
+
   if (apo->objects.size() > 3)
   {
     return false;
@@ -3372,6 +3410,10 @@ int
 apo_add_circle(apo_t* apo, double cx, double cy, double r)
 {
   assert(apo);
+#ifdef DEBUG_LOG
+  printf("add circle: center(%f, %f), radius %f \n", cx, cy, r);
+#endif
+
   if (apo->objects.size() > 3)
   {
     return false;
@@ -3400,7 +3442,8 @@ apo_solve(apo_t* apo, apo_solution_t** solution)
 
   for (auto&& c : res)
   {
-    (*solution)->circles.emplace_back(c);
+    if (c.center.isValid())
+      (*solution)->circles.emplace_back(c);
   }
 
   return true;
