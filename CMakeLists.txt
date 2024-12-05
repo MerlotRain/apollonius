@@ -8,6 +8,8 @@ option(BUILD_TESTING "build apollonius solution tests" OFF)
 
 add_library(apollonius STATIC apollonius.cpp)
 
+target_include_directories(apollonius PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(BUILD_TESTING)
     add_executable(apollonius_test apollonius_test.cpp)
     target_link_libraries(apollonius_test apollonius)
