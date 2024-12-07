@@ -57,3 +57,4 @@ build
 Testing
 *.hx
 *.js
+.DS_Store

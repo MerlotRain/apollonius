@@ -26,10 +26,10 @@
 #include <assert.h>
 #include <cmath>
 #include <iostream>
+#include <limits>
+#include <numeric>
 #include <set>
 #include <vector>
-#include <numeric>
-#include <limits>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -281,7 +281,7 @@ static std::vector<APO_Circle> getSolutionFromCCC(const APO_Circle& circle1,
 
 template <class T, class E>
 static std::vector<APO_Point> getIntersectionPoints(const T& t, const E& e,
-                                                    bool limited = true);
+                                                    bool limited);
 template <>
 std::vector<APO_Point> getIntersectionPoints<APO_Circle, APO_Circle>(
     const APO_Circle& t, const APO_Circle& e, bool limited);
@@ -368,7 +368,8 @@ getIntersectionPoints<APO_Circle, APO_Circle>(const APO_Circle& circle1,
   double r2 = circle2.radius;
   if (r1 < r2)
   {
-    return getIntersectionPoints<APO_Circle, APO_Circle>(circle2, circle1);
+    return getIntersectionPoints<APO_Circle, APO_Circle>(circle2, circle1,
+                                                         true);
   }
 
   APO_Point c1 = circle1.center;
@@ -780,7 +781,7 @@ getCircleTangentsThroughPoint(const APO_Circle& circle, const APO_Point& p)
   {
     APO_Circle circle2 = APO_Circle::createFrom2Points(p, circle.center);
     std::vector<APO_Point> touching_points
-        = getIntersectionPoints(circle2, circle);
+        = getIntersectionPoints(circle2, circle, true);
     if (touching_points.size() == 1)
     {
       res.push_back(APO_Line(p, touching_points[0]));
@@ -2059,12 +2060,12 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
     // Get intersections of two concentric with the other circle and the locus:
     locus.radius               = locus.radius - rDiff / 2;
     circle1.radius             = circle1.radius + fabs(rDiff / 2);
-    std::vector<APO_Point> ips = getIntersectionPoints(locus, circle1);
+    std::vector<APO_Point> ips = getIntersectionPoints(locus, circle1, true);
     circle1.radius             = circle1.radius - fabs(rDiff);
     // Avoid inversion through the center with negative radii:
     if (circle1.radius > 0)
     {
-      auto&& lips = getIntersectionPoints(locus, circle1);
+      auto&& lips = getIntersectionPoints(locus, circle1, true);
       ips.insert(ips.end(), lips.begin(), lips.end());
     }
 
@@ -2142,9 +2143,9 @@ getSolutionFromCCC(const APO_Circle& c1, const APO_Circle& c2,
 
   // special case: each circle intersects the other two,
   // at least one intersects through two points:
-  std::vector<APO_Point> ips12 = getIntersectionPoints(circle1, circle2);
-  std::vector<APO_Point> ips13 = getIntersectionPoints(circle1, circle3);
-  std::vector<APO_Point> ips23 = getIntersectionPoints(circle2, circle3);
+  std::vector<APO_Point> ips12 = getIntersectionPoints(circle1, circle2, true);
+  std::vector<APO_Point> ips13 = getIntersectionPoints(circle1, circle3, true);
+  std::vector<APO_Point> ips23 = getIntersectionPoints(circle2, circle3, true);
 
   size_t nIps12 = ips12.size();
   size_t nIps13 = ips13.size();
