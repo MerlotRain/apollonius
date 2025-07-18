@@ -23,7 +23,7 @@ This library provides a C/C++ API to solve the Apollonius Circle Problem, which 
 1. Clone the repository:
 
 ``` bash
-git clone [https://github.com/MerlotRain/apollonius.git](https://github.com/MerlotRain/apollonius.git)
+git clone https://github.com/MerlotRain/apollonius.git
 cd apollonius
 ```
 2. Build the library using a CMake build system (optional for shared/static library):
